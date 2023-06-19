@@ -15,9 +15,9 @@ char auth[] = "oivD4Nh-C3YBANiGk71x44-b1FjOkw6G";
 BlynkTimer timer;
 
 //melakukan deklarasi pin LED dan buzzer
-#define pinR 15
-#define pinG 2
-#define pinB 4
+#define pinR 13
+#define pinG 12
+#define pinB 14
 #define buzzer 5
 int state = 0;
 
@@ -30,7 +30,7 @@ int state = 0;
 #define PARB 2.769034857
 
 //deklarasi pin sensor DHT11
-DHT dht(13, DHT11);
+DHT dht(27, DHT11);
 WiFiManager wm;
 
 //perhitungan untuk mendapatkan nilai ppm pada kualitas udara dengan MQ135
@@ -43,14 +43,20 @@ float getPPM(int pin) {
   return PARA * pow((getResistance(pin)/RZERO), -PARB);
 }
 
+float mapfloat(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (float)(x - in_min) * (out_max - out_min) / (float)(in_max - in_min) + out_min;
+}
+
 void airQuality()
 {
   float ppm = getPPM(34);
+  ppm = mapfloat(ppm, 0, 4095, 0, 1000);
   Serial.print("PPM: ");
   Serial.println(ppm);
 
   classState(ppm);
-  Blynk.virtualWrite(V0, ppm); //menambahkan data kualitas udara yang terdeteksi ke blynk
+  Blynk.virtualWrite(V0, ppm);
   delay(2000);
 }
 
@@ -71,26 +77,26 @@ void dhtSensor(){
 
 //pengelompokkan kualitas udara serta output pada LED dan buzzer
 void classState(float ppm){
-  if((int)ppm < 400){
+  if(ppm < 400){
     digitalWrite(pinR, LOW);
     digitalWrite(pinG, HIGH);
     digitalWrite(pinB, LOW);
     digitalWrite(buzzer, HIGH);
     state=0;
-  }else if((int)ppm >= 400 && (int)ppm < 600){
+  }else if(ppm >= 400 && ppm < 600){
     digitalWrite(pinR, LOW);
     digitalWrite(pinG, LOW);
     digitalWrite(pinB, HIGH);
     digitalWrite(buzzer, HIGH);
     state=0;
-  }else if((int)ppm >=600){
+  }else if(ppm >=600){
     digitalWrite(pinR, HIGH);
     digitalWrite(pinG, LOW);
     digitalWrite(pinB, LOW);
     digitalWrite(buzzer, LOW);
     state=1;
   }
-  Blynk.virtualWrite(V4, state); 
+  Blynk.virtualWrite(V4, state);
   delay(500);
 }
 
@@ -99,7 +105,7 @@ void setup()
   Serial.begin(115200);
 
   //melakukan pengkoneksian ke WiFi
-  // wm.resetSettings();
+  // wm.resetSettings(); // Reset pengaturan data Wi-Fi
   bool res;
   res = wm.autoConnect("SmokeDetector", "password");
   if (!res)
